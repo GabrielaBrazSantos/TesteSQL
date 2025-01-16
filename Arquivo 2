@@ -1,0 +1,52 @@
+--EXEC sp_SelecionarProdutos @Id=null, @Descricao='protetor', @Pagina=1, @QtdRegistros=15
+
+create procedure sp_SelecionarProdutos
+(
+	@Id int = null,
+	@Descricao varchar(100) = null,
+	@Pagina int = null,
+	@QtdRegistros int = null
+)
+
+as
+	/* valor para TESTE
+	declare @id int 
+	declare @Descricao varchar(100)
+	declare @Pagina int 
+	declare @QtdRegistros int
+	--set @Descricao='protetor'
+	set @Id = 1
+	*/
+
+
+	-- Define valor padrão
+	if @Pagina is null or @Pagina  <= 0 
+	begin 
+		set @Pagina = 1
+	end
+
+	if @QtdRegistros is null or @QtdRegistros <= 0
+	begin
+		set @QtdRegistros = 10
+	end
+	
+
+	declare @QtdeInicial int 
+	set @QtdeInicial = 1
+
+	if @Pagina > 1 
+	begin 
+		set @QtdeInicial = (@Pagina * @QtdRegistros) - (@QtdRegistros-1)
+		set @QtdRegistros = @Pagina * @QtdRegistros
+	end;
+	
+WITH lista AS  
+(
+	SELECT  ROW_NUMBER() OVER(ORDER BY Id ASC) AS Row, ID, DESCRICAO
+	FROM	PRODUTOS
+	WHERE	(@Id IS NULL OR Id = @Id)
+	and (@Descricao is NULL or Descricao like '%' + @Descricao + '%')
+)
+select ID, DESCRICAO , (Select COUNT(*) from lista) as TotalRegistros
+from lista 
+where Row between @QtdeInicial and @QtdRegistros;
